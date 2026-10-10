@@ -27,6 +27,7 @@
 > **로컬 연구 (업스트림 아님).** 학습 재현과 VFM 플라이휠 그래프는 형제 체크아웃 [`MiniMax-H3-vfm/scripts/vfm/README.md`](../MiniMax-H3-vfm/scripts/vfm/README.md) · 에이전트 컨텍스트 [`AGENTS.md`](AGENTS.md). SCD 포트: `docs/`. 업스트림에 푸시하지 마세요.
 
 > **H3의 Level-of-Token(LoT) — 로컬 연구.** 디테일이 적은 영역에서 DiT 토큰을 더 적고 크게 사용해 37프레임 768×1344 클립에서 DiT 포워드가 2.64× 빨라집니다. 학습 시작: [치트시트](scripts/lot/CHEATSHEET.md) · [전체 가이드](scripts/lot/README.md#training-h3-for-lot-from-your-own-mp4s) · [결과](https://github.com/johndpope/MiniMax-H3/issues/1). 업스트림에 푸시하지 마세요.
+> **LoT 공개 결과 및 예시:** [벤치마크와 비교 미디어](results/lot-h3-2026-10-10/README.md). [가중치는 Hugging Face에 있습니다](https://huggingface.co/stale2000/LevelOfToken). 이 GitHub 저장소에는 가중치를 포함하지 않았습니다.
 
 ## 프롬프트 작성 스킬
 

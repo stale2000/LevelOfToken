@@ -27,6 +27,7 @@
 > **本地研究（非上游）。** 训练复现与 VFM flywheel 图在兄弟仓库 [`MiniMax-H3-vfm/scripts/vfm/README.md`](../MiniMax-H3-vfm/scripts/vfm/README.md) · 代理上下文 [`AGENTS.md`](AGENTS.md)。SCD 移植：`docs/`。请勿将这些内容推送到上游。
 
 > **H3 上的 Level-of-Token（LoT）— 本地研究。** 在细节少的区域使用更少、更大的 DiT token：37 帧 768×1344 片段上 DiT 前向快 2.64×。开始训练：[速查表](scripts/lot/CHEATSHEET.md) · [完整指南](scripts/lot/README.md#training-h3-for-lot-from-your-own-mp4s) · [结果](https://github.com/johndpope/MiniMax-H3/issues/1)。请勿推送到上游。
+> **LoT 公开结果与示例：**[基准测试和对比媒体](results/lot-h3-2026-10-10/README.md)。[权重托管在 Hugging Face](https://huggingface.co/stale2000/LevelOfToken)；此 GitHub 仓库不包含权重。
 
 ## 提示词编写技能
 

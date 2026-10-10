@@ -1,0 +1,124 @@
+{
+  "experiment": "r4 matched-budget inference selector screen",
+  "split": "validation",
+  "prompt_count": 4,
+  "steps": 30,
+  "warmup_sigma": 0.9,
+  "token_budget_fraction": 0.5,
+  "status": "screen only; no untouched confirmation",
+  "controls": [
+    "uniform50_1x2",
+    "entropy_inference",
+    "entropy_inference_shuffle"
+  ],
+  "records": [
+    {
+      "prompt_id": 0,
+      "prompt": "The video features a young man posing confidently in front of a white background. He is shirtless, revealing a well-defined muscular physique, and has a tattoo on his left arm. He is wearing black shorts with white stripes on the sides. His smile is bright and he appears to be in a good mood. The video is likely a fitness or bodybuilding-related advertisement or promotional material. The style of the video is straightforward and focused on the man's physique, with no additional elements or distractions in the background.",
+      "video_seed": 20261009,
+      "audio_seed": 20261010,
+      "mask_sheet": "masks/p0.png",
+      "entropy_video": "p0_entropy_inference.mp4",
+      "shuffled_control_video": "p0_entropy_inference_shuffle.mp4",
+      "entropy_layout": {
+        "selected_at_step": 18,
+        "extent_rectangle_histogram": {
+          "1x1x1": 608,
+          "1x2x2": 220,
+          "1x4x4": 12
+        },
+        "rectangles_per_frame": 120
+      },
+      "shuffled_entropy_layout": {
+        "selected_at_step": 18,
+        "extent_rectangle_histogram": {
+          "1x1x1": 608,
+          "1x2x2": 220,
+          "1x4x4": 12
+        },
+        "rectangles_per_frame": 120
+      },
+      "entropy_mask_sheet": "masks/p0.png"
+    },
+    {
+      "prompt_id": 1,
+      "prompt": "The video features a person dressed in a vibrant costume, which includes a yellow top with orange sleeves and a pink wig with a bow on top. The individual is standing against a blue background, and their pose changes slightly between the frames. The style of the video is playful and colorful, with a focus on the costume and the person's expressive facial expressions. The overall mood of the video is cheerful and lighthearted.",
+      "video_seed": 20261011,
+      "audio_seed": 20261012,
+      "mask_sheet": "masks/p1.png",
+      "entropy_video": "p1_entropy_inference.mp4",
+      "shuffled_control_video": "p1_entropy_inference_shuffle.mp4",
+      "entropy_layout": {
+        "selected_at_step": 18,
+        "extent_rectangle_histogram": {
+          "1x1x1": 560,
+          "1x2x2": 280
+        },
+        "rectangles_per_frame": 120
+      },
+      "shuffled_entropy_layout": {
+        "selected_at_step": 18,
+        "extent_rectangle_histogram": {
+          "1x1x1": 560,
+          "1x2x2": 280
+        },
+        "rectangles_per_frame": 120
+      },
+      "entropy_mask_sheet": "masks/p1.png"
+    },
+    {
+      "prompt_id": 2,
+      "prompt": "The video features a man in a white lab coat and glasses, standing against a gray background. He appears to be a scientist or doctor, given his attire. The man is looking directly at the camera, suggesting that he is addressing the viewer. The lighting in the video is soft and even, highlighting the man's features without creating harsh shadows. The overall style of the video is professional and straightforward, with no additional elements or distractions. The focus is solely on the man and his message.",
+      "video_seed": 20261013,
+      "audio_seed": 20261014,
+      "mask_sheet": "masks/p2.png",
+      "entropy_video": "p2_entropy_inference.mp4",
+      "shuffled_control_video": "p2_entropy_inference_shuffle.mp4",
+      "entropy_layout": {
+        "selected_at_step": 18,
+        "extent_rectangle_histogram": {
+          "1x1x1": 560,
+          "1x2x2": 280
+        },
+        "rectangles_per_frame": 120
+      },
+      "shuffled_entropy_layout": {
+        "selected_at_step": 18,
+        "extent_rectangle_histogram": {
+          "1x1x1": 560,
+          "1x2x2": 280
+        },
+        "rectangles_per_frame": 120
+      },
+      "entropy_mask_sheet": "masks/p2.png"
+    },
+    {
+      "prompt_id": 3,
+      "prompt": "The video features a young boy with glasses, wearing a gray t-shirt. He is seated in a classroom setting, with a whiteboard and a bulletin board visible in the background. The boy appears to be engaged in a conversation or listening attentively. The style of the video is candid and informal, capturing a moment in the boy's daily life. The focus is on the boy, with the background elements providing context to the setting. The lighting is natural, suggesting an indoor environment with ample light. The video does not contain any text or additional graphics.",
+      "video_seed": 20261015,
+      "audio_seed": 20261016,
+      "mask_sheet": "masks/p3.png",
+      "entropy_video": "p3_entropy_inference.mp4",
+      "shuffled_control_video": "p3_entropy_inference_shuffle.mp4",
+      "entropy_layout": {
+        "selected_at_step": 18,
+        "extent_rectangle_histogram": {
+          "1x1x1": 560,
+          "1x2x2": 280
+        },
+        "rectangles_per_frame": 120
+      },
+      "shuffled_entropy_layout": {
+        "selected_at_step": 18,
+        "extent_rectangle_histogram": {
+          "1x1x1": 560,
+          "1x2x2": 280
+        },
+        "rectangles_per_frame": 120
+      },
+      "entropy_mask_sheet": "masks/p3.png"
+    }
+  ],
+  "confirmation_completed": false,
+  "interpretation": "Entropy was among the stronger sparse candidates in the step-0 screen, but detail50 had a slightly lower teacher gap. This selector comparison uses four validation prompts only and is not a confirmed winner."
+}

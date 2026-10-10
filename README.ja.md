@@ -27,6 +27,7 @@
 > **ローカル研究（アップストリームではない）。** 学習の再現と VFM フライホイールのグラフは兄弟チェックアウト [`MiniMax-H3-vfm/scripts/vfm/README.md`](../MiniMax-H3-vfm/scripts/vfm/README.md) · エージェント文脈 [`AGENTS.md`](AGENTS.md)。SCD ポート: `docs/`。アップストリームへは push しない。
 
 > **H3 の Level-of-Token（LoT）— ローカル研究。** ディテールの少ない領域で DiT トークンを少なく大きくし、37 フレーム 768×1344 クリップで DiT フォワードが 2.64× 高速。学習の始め方: [チートシート](scripts/lot/CHEATSHEET.md) · [詳細ガイド](scripts/lot/README.md#training-h3-for-lot-from-your-own-mp4s) · [結果](https://github.com/johndpope/MiniMax-H3/issues/1)。アップストリームへは push しない。
+> **LoT の公開結果とサンプル:** [ベンチマークと比較メディア](results/lot-h3-2026-10-10/README.md)。[重みは Hugging Face にあります](https://huggingface.co/stale2000/LevelOfToken)。この GitHub リポジトリには重みを含めていません。
 
 ## プロンプト作成スキル
 

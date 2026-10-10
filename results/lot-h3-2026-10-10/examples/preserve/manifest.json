@@ -1,0 +1,158 @@
+{
+  "branch": "preserve",
+  "checkpoint_step": 500,
+  "split": "untouched confirmation",
+  "status": "complete",
+  "width": 640,
+  "height": 384,
+  "fps": 24,
+  "pixel_frames": 22,
+  "sampler": "pure_euler",
+  "sigmas": [
+    1.0,
+    0.9971642175818509,
+    0.9941458222458754,
+    0.9908256880733946,
+    0.987377811521306,
+    0.9836839001376056,
+    0.979591836734694,
+    0.9753099501960371,
+    0.9706854749834692,
+    0.9655172413793103,
+    0.9600575746671467,
+    0.9541008276899925,
+    0.9473684210526315,
+    0.9401685781401133,
+    0.9322083212103578,
+    0.9230769230769231,
+    0.9131497474335994,
+    0.9019743678559058,
+    0.888888888888889,
+    0.874329958308517,
+    0.8575096277278561,
+    0.8372093023255813,
+    0.8138176276352552,
+    0.7856743144935646,
+    0.7500000000000001,
+    0.7063799788508988,
+    0.6499595796281326,
+    0.5714285714285715,
+    0.46286701208981,
+    0.296943231441048,
+    0.0
+  ],
+  "variants": [
+    "dense_lora",
+    "uniform50_1x2",
+    "detail50_warmup"
+  ],
+  "outputs": [
+    {
+      "file": "p0_dense_lora.mp4",
+      "variant": "dense_lora",
+      "prompt": "In the video, a man wearing glasses and a blue shirt is seen interacting with a small dog. The dog, with its white and brown fur, is sitting on a pink surface. The man appears to be speaking to the dog, possibly giving it a command or a treat. The scene is set against a white wall, which provides a neutral backdrop for the interaction between the man and the dog. The overall style of the video is casual and intimate, capturing a moment of connection between the man and his pet.",
+      "video_seed": 20261009,
+      "camera_motion_group": "static",
+      "mask_sheet": "masks/p0.png"
+    },
+    {
+      "file": "p0_uniform50_1x2.mp4",
+      "variant": "uniform50_1x2",
+      "prompt": "In the video, a man wearing glasses and a blue shirt is seen interacting with a small dog. The dog, with its white and brown fur, is sitting on a pink surface. The man appears to be speaking to the dog, possibly giving it a command or a treat. The scene is set against a white wall, which provides a neutral backdrop for the interaction between the man and the dog. The overall style of the video is casual and intimate, capturing a moment of connection between the man and his pet.",
+      "video_seed": 20261009,
+      "camera_motion_group": "static",
+      "mask_sheet": "masks/p0.png"
+    },
+    {
+      "file": "p0_detail50_warmup.mp4",
+      "variant": "detail50_warmup",
+      "prompt": "In the video, a man wearing glasses and a blue shirt is seen interacting with a small dog. The dog, with its white and brown fur, is sitting on a pink surface. The man appears to be speaking to the dog, possibly giving it a command or a treat. The scene is set against a white wall, which provides a neutral backdrop for the interaction between the man and the dog. The overall style of the video is casual and intimate, capturing a moment of connection between the man and his pet.",
+      "video_seed": 20261009,
+      "camera_motion_group": "static",
+      "mask_sheet": "masks/p0.png"
+    },
+    {
+      "file": "p1_dense_lora.mp4",
+      "variant": "dense_lora",
+      "prompt": "In the video, a man is seen interacting with a yellow and black device attached to a green door. The device appears to be a camera or a sensor, and the man is holding it up to the door, possibly taking a picture or recording a video. The man is dressed in a black jacket and seems to be focused on his task. The door is green and has a window, through which the man's reflection can be seen. The scene suggests that the man might be a security officer or a technician, inspecting or setting up the device for security purposes. The overall style of the video is realistic and straightforward, with no additional elements or distractions.",
+      "video_seed": 20261011,
+      "camera_motion_group": "moving",
+      "mask_sheet": "masks/p1.png"
+    },
+    {
+      "file": "p1_uniform50_1x2.mp4",
+      "variant": "uniform50_1x2",
+      "prompt": "In the video, a man is seen interacting with a yellow and black device attached to a green door. The device appears to be a camera or a sensor, and the man is holding it up to the door, possibly taking a picture or recording a video. The man is dressed in a black jacket and seems to be focused on his task. The door is green and has a window, through which the man's reflection can be seen. The scene suggests that the man might be a security officer or a technician, inspecting or setting up the device for security purposes. The overall style of the video is realistic and straightforward, with no additional elements or distractions.",
+      "video_seed": 20261011,
+      "camera_motion_group": "moving",
+      "mask_sheet": "masks/p1.png"
+    },
+    {
+      "file": "p1_detail50_warmup.mp4",
+      "variant": "detail50_warmup",
+      "prompt": "In the video, a man is seen interacting with a yellow and black device attached to a green door. The device appears to be a camera or a sensor, and the man is holding it up to the door, possibly taking a picture or recording a video. The man is dressed in a black jacket and seems to be focused on his task. The door is green and has a window, through which the man's reflection can be seen. The scene suggests that the man might be a security officer or a technician, inspecting or setting up the device for security purposes. The overall style of the video is realistic and straightforward, with no additional elements or distractions.",
+      "video_seed": 20261011,
+      "camera_motion_group": "moving",
+      "mask_sheet": "masks/p1.png"
+    },
+    {
+      "file": "p2_dense_lora.mp4",
+      "variant": "dense_lora",
+      "prompt": "The video is a simple yet elegant presentation of a green smoothie. The smoothie is served in a tall glass, which is placed on a white surface. The glass is adorned with a slice of orange and a sprig of mint, adding a touch of color and freshness to the scene. The background is a plain white wall, which contrasts with the green of the smoothie and the orange slice, making the drink the focal point of the image. The overall style of the video is minimalist and clean, with a focus on the smoothie and its ingredients. The video does not contain any text or additional elements, allowing the viewer to fully appreciate the smoothie and its presentation.",
+      "video_seed": 20261013,
+      "camera_motion_group": "moving",
+      "mask_sheet": "masks/p2.png"
+    },
+    {
+      "file": "p2_uniform50_1x2.mp4",
+      "variant": "uniform50_1x2",
+      "prompt": "The video is a simple yet elegant presentation of a green smoothie. The smoothie is served in a tall glass, which is placed on a white surface. The glass is adorned with a slice of orange and a sprig of mint, adding a touch of color and freshness to the scene. The background is a plain white wall, which contrasts with the green of the smoothie and the orange slice, making the drink the focal point of the image. The overall style of the video is minimalist and clean, with a focus on the smoothie and its ingredients. The video does not contain any text or additional elements, allowing the viewer to fully appreciate the smoothie and its presentation.",
+      "video_seed": 20261013,
+      "camera_motion_group": "moving",
+      "mask_sheet": "masks/p2.png"
+    },
+    {
+      "file": "p2_detail50_warmup.mp4",
+      "variant": "detail50_warmup",
+      "prompt": "The video is a simple yet elegant presentation of a green smoothie. The smoothie is served in a tall glass, which is placed on a white surface. The glass is adorned with a slice of orange and a sprig of mint, adding a touch of color and freshness to the scene. The background is a plain white wall, which contrasts with the green of the smoothie and the orange slice, making the drink the focal point of the image. The overall style of the video is minimalist and clean, with a focus on the smoothie and its ingredients. The video does not contain any text or additional elements, allowing the viewer to fully appreciate the smoothie and its presentation.",
+      "video_seed": 20261013,
+      "camera_motion_group": "moving",
+      "mask_sheet": "masks/p2.png"
+    },
+    {
+      "file": "p3_dense_lora.mp4",
+      "variant": "dense_lora",
+      "prompt": "The video features a man in a suit, standing in a room with green walls. He is looking to his left, and his expression is serious. The room has a window in the background, and there is a blurred figure of a person in the foreground. The man is wearing a white shirt and a gray suit. The overall style of the video is realistic, with a focus on the man's expression and the room's interior.",
+      "video_seed": 20261015,
+      "camera_motion_group": "static",
+      "mask_sheet": "masks/p3.png"
+    },
+    {
+      "file": "p3_uniform50_1x2.mp4",
+      "variant": "uniform50_1x2",
+      "prompt": "The video features a man in a suit, standing in a room with green walls. He is looking to his left, and his expression is serious. The room has a window in the background, and there is a blurred figure of a person in the foreground. The man is wearing a white shirt and a gray suit. The overall style of the video is realistic, with a focus on the man's expression and the room's interior.",
+      "video_seed": 20261015,
+      "camera_motion_group": "static",
+      "mask_sheet": "masks/p3.png"
+    },
+    {
+      "file": "p3_detail50_warmup.mp4",
+      "variant": "detail50_warmup",
+      "prompt": "The video features a man in a suit, standing in a room with green walls. He is looking to his left, and his expression is serious. The room has a window in the background, and there is a blurred figure of a person in the foreground. The man is wearing a white shirt and a gray suit. The overall style of the video is realistic, with a focus on the man's expression and the room's interior.",
+      "video_seed": 20261015,
+      "camera_motion_group": "static",
+      "mask_sheet": "masks/p3.png"
+    }
+  ],
+  "attribution": "OpenVid-1M / OpenVidHD, NJU-PCALab, CC BY 4.0; captions are from the source dataset.",
+  "layout_visualization": {
+    "file_pattern": "masks/p{prompt_id}.png",
+    "columns": [
+      "dense 1x1 100%",
+      "uniform 1x2 50%",
+      "adaptive detail50 50%",
+      "evenly sampled frames from paired detail50 MP4"
+    ],
+    "mask_frames": "seven latent-time frames; adaptive rectangles come from the recorded warm-up selection trace"
+  }
+}
