@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import math
 import sys
+import tempfile
 from pathlib import Path
 
 import torch
@@ -15,6 +16,7 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from adapter import LotVisualAdapter  # noqa: E402
+from budget_layout import EntropyCalibration, choose_budget_layout  # noqa: E402
 from flow import (  # noqa: E402
     _asymflow,
     apply_extent_scales,
@@ -31,21 +33,31 @@ from flow import (  # noqa: E402
     sample_noisy,
     scatter_extent,
 )
-from infer import integrate, sigma_grid  # noqa: E402
-from h3_positions import packed_positions, sample_axis, spatial_axis, video_positions  # noqa: E402
 from h3 import (  # noqa: E402
     H3_EXTENTS,
-    clip_layout,
     H3_HIDDEN,
     H3_PATCH,
     H3_TOKEN_DIM,
+    clip_layout,
     gate_frame_layout,
     make_h3_adapter,
     over_wan_frame_budget,
     patchify,
     unpatchify,
 )
-from h3_splice import LotSplice  # noqa: E402
+from h3_positions import (  # noqa: E402
+    packed_positions,
+    sample_axis,
+    spatial_axis,
+    video_positions,
+)
+from h3_splice import (  # noqa: E402
+    BudgetedLayoutController,
+    LotSplice,
+    h3_clean_estimate,
+    transition_layout_state,
+)
+from infer import integrate, sigma_grid  # noqa: E402
 from layout import (  # noqa: E402
     TokenRect,
     blur_radius,
@@ -56,6 +68,11 @@ from layout import (  # noqa: E402
     layout_from_regions,
     layout_from_vrs,
     shape_features,
+)
+from run_artifacts import (  # noqa: E402
+    load_trainer_state,
+    resolve_checkpoint,
+    save_checkpoint_bundle,
 )
 from sanity import (  # noqa: E402
     block_macs,
@@ -586,6 +603,7 @@ def test_h3_loss_is_velocity_mse_in_y_space():
 
 def test_train_layouts_tile_and_mix():
     import random as _random
+
     from train_h3 import _tile, sample_layout
 
     torch.manual_seed(9)
@@ -624,6 +642,152 @@ def test_train_shift_moves_mass_to_low_sigma():
     assert float(low.median()) < float(h3.median())
 
 
+def test_budget_layout_policies_share_feasible_count():
+    torch.manual_seed(41)
+    tokens = torch.randn(2, 12, 20, H3_TOKEN_DIM)
+    tokens[:, :4, :4] *= 5.0
+    calibration = EntropyCalibration.fit([tokens[:1], tokens[1:]])
+    layouts = [
+        choose_budget_layout(tokens, 77, policy="detail"),
+        choose_budget_layout(tokens, 77, policy="entropy", calibration=calibration),
+        choose_budget_layout(tokens, 77, policy="random", seed=7),
+    ]
+    assert {result.actual_per_frame for result in layouts} == {75}
+    assert all(result.layout.count == 150 for result in layouts)
+    assert all({rect.extent for rect in result.layout.rects} <= set(H3_EXTENTS) for result in layouts)
+    entropy_again = choose_budget_layout(tokens, 77, policy="entropy", calibration=calibration)
+    random_again = choose_budget_layout(tokens, 77, policy="random", seed=7)
+    assert layouts[1].layout == entropy_again.layout
+    assert layouts[2].layout == random_again.layout
+    dense = choose_budget_layout(tokens, 240, policy="detail")
+    assert dense.layout.count == 480
+    try:
+        choose_budget_layout(tokens, 14, policy="detail")
+    except ValueError as exc:
+        assert "feasible range" in str(exc)
+    else:
+        raise AssertionError("budget below the coarse-root minimum was accepted")
+
+
+def test_entropy_is_per_feature_and_flat_regions_cost_no_detail():
+    calibration = EntropyCalibration(torch.zeros(2), torch.ones(2))
+    block = torch.zeros(1, 2, 2, 2)
+    block[0, :, :, 0] = torch.tensor([[-1.0, 1.0], [-1.0, 1.0]])
+    block[..., 1] = 0.25
+    from budget_layout import _entropy
+
+    assert abs(_entropy(block, calibration, bins=16) - 0.5) < 1e-6
+    assert _entropy(torch.ones(1, 4, 4, 2), calibration, bins=16) == 0.0
+
+
+def test_h3_layout_transition_preserves_oracle_noise():
+    adapter = LotVisualAdapter(H3_TOKEN_DIM, 8, list(H3_EXTENTS), shape_hidden=8)
+    adapter.bank.scale((1, 2, 2)).fill_(2.0)
+    adapter.bank.scale((1, 4, 4)).fill_(3.0)
+    dense = dense_layout(1, 4, 4)
+    coarse2 = layout_from_rects(1, 4, 4, [
+        TokenRect(0, u, v, 1, 2, 2) for u in (0, 2) for v in (0, 2)
+    ])
+    coarse4 = layout_from_rects(1, 4, 4, [TokenRect(0, 0, 0, 1, 4, 4)])
+    splices = [LotSplice(adapter, layout, y_space=True) for layout in (dense, coarse2, coarse4)]
+    x0 = torch.randn(1, 24, 1, 8, 8)
+    eps = torch.randn_like(x0)
+    for old in splices:
+        for new in splices:
+            for sigma in (0.0, 0.2, 0.9, 1.0):
+                old_clean = old.to_y(x0)
+                state = (1.0 - sigma) * old_clean + sigma * eps
+                output = old_clean - eps  # H3 head convention, x0 - eps.
+                clean_y = h3_clean_estimate(state, output, sigma)
+                clean_x = old.to_x(clean_y)
+                changed = transition_layout_state(state, clean_x, sigma, old, new)
+                expected = (1.0 - sigma) * new.to_y(x0) + sigma * eps
+                assert torch.allclose(changed, expected, atol=1e-5, rtol=1e-5)
+    same = transition_layout_state(state, clean_x, 0.5, splices[0], splices[0])
+    assert same is state
+
+
+def test_budgeted_layout_controller_switches_at_euler_boundary():
+    adapter = LotVisualAdapter(H3_TOKEN_DIM, 8, list(H3_EXTENTS), shape_hidden=8)
+    adapter.bank.scale((1, 2, 2)).fill_(1.5)
+    adapter.bank.scale((1, 4, 4)).fill_(2.0)
+    dense = LotSplice(adapter, dense_layout(1, 4, 4), y_space=True)
+    controller = BudgetedLayoutController(
+        dense, 7, policy="detail", warmup_steps=5
+    )
+    x0 = torch.randn(1, 24, 1, 8, 8)
+    eps = torch.randn_like(x0)
+    sigma_before, sigma_after = 0.8, 0.7
+    state_before = (1 - sigma_before) * x0 + sigma_before * eps
+    output = x0 - eps
+    state_after = state_before + (sigma_before - sigma_after) * output
+    unchanged, active, selection = controller.after_euler_step(
+        state_before, output, sigma_before, state_after, sigma_after, completed_steps=4
+    )
+    assert unchanged is state_after and active is dense and selection is None
+    changed, active, selection = controller.after_euler_step(
+        state_before, output, sigma_before, state_after, sigma_after, completed_steps=5
+    )
+    assert selection is not None and selection.actual_per_frame == 7
+    assert active.layout == selection.layout and active.y_space
+    expected = (1 - sigma_after) * active.to_y(x0) + sigma_after * eps
+    assert torch.allclose(changed, expected, atol=1e-5, rtol=1e-5)
+
+
+def test_entropy_training_layouts_use_supported_budgeted_extents():
+    import random as _random
+
+    from train_h3 import sample_layout
+
+    latent = torch.randn(1, 24, 7, 24, 40)
+    calibration = EntropyCalibration.fit([patchify(latent)[0]])
+    for policy in ("detail", "entropy", "random"):
+        for seed in range(12):
+            layout, kind = sample_layout(
+                latent,
+                _random.Random(seed),
+                dense_p=0.0,
+                policy=policy,
+                calibration=calibration,
+            )
+            assert layout.dense_count == 7 * 12 * 20
+            assert layout.count <= layout.dense_count
+            assert {rect.extent for rect in layout.rects} <= set(H3_EXTENTS)
+            if kind == f"{policy}_budget":
+                per_frame = layout.count // layout.time
+                assert 12 * 20 * 0.25 <= per_frame <= 12 * 20 * 0.75
+
+
+def test_checkpoint_bundles_keep_last_complete_snapshot():
+    run_dir = Path(tempfile.mkdtemp(prefix="lot-checkpoints-"))
+    adapter = {"weight": torch.arange(4, dtype=torch.float32)}
+
+    def write_lora(path):
+        path.write_bytes(b"complete-lora")
+
+    step0 = save_checkpoint_bundle(
+        run_dir, 0, adapter, write_lora, {"step": 0, "optimizer": {}}, {"rank": 16}
+    )
+    assert resolve_checkpoint(run_dir).resolve() == step0.resolve()
+    restored_path, restored_state = load_trainer_state(run_dir)
+    assert restored_path.resolve() == step0.resolve() and restored_state["step"] == 0
+
+    def crash_during_lora(path):
+        path.write_bytes(b"partial")
+        raise OSError("simulated interruption during checkpoint")
+
+    try:
+        save_checkpoint_bundle(
+            run_dir, 10, adapter, crash_during_lora, {"step": 10}, {"rank": 16}
+        )
+    except OSError:
+        pass
+    else:
+        raise AssertionError("simulated checkpoint interruption did not propagate")
+    assert resolve_checkpoint(run_dir).resolve() == step0.resolve()
+    assert not (run_dir / "checkpoints" / "step-00000010").exists()
+
+
 def main():
     tests = [
         test_shape_and_centers,
@@ -651,6 +815,12 @@ def main():
         test_h3_loss_is_velocity_mse_in_y_space,
         test_train_layouts_tile_and_mix,
         test_train_shift_moves_mass_to_low_sigma,
+        test_budget_layout_policies_share_feasible_count,
+        test_entropy_is_per_feature_and_flat_regions_cost_no_detail,
+        test_h3_layout_transition_preserves_oracle_noise,
+        test_budgeted_layout_controller_switches_at_euler_boundary,
+        test_entropy_training_layouts_use_supported_budgeted_extents,
+        test_checkpoint_bundles_keep_last_complete_snapshot,
     ]
     for test in tests:
         test()

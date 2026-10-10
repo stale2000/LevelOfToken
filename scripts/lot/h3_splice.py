@@ -13,12 +13,61 @@ of silently feeding x-space rows to y-space heads.
 
 from __future__ import annotations
 
-import torch
+import math
+from dataclasses import replace
 
+import torch
 from adapter import LotVisualAdapter
 from h3 import patchify, unpatchify
 from h3_positions import video_positions
 from layout import LotLayout
+
+
+def h3_clean_estimate(y_t: torch.Tensor, x0_minus_eps: torch.Tensor, sigma: torch.Tensor | float) -> torch.Tensor:
+    """Recover H3's clean estimate from its ``x0 - eps`` output in y-space."""
+    if y_t.shape != x0_minus_eps.shape:
+        raise ValueError("H3 state and output must have the same shape")
+    sig = torch.as_tensor(sigma, device=y_t.device, dtype=y_t.dtype)
+    if sig.ndim == 1 and sig.shape[0] == y_t.shape[0]:
+        sig = sig.reshape(y_t.shape[0], *([1] * (y_t.ndim - 1)))
+    try:
+        sig = torch.broadcast_to(sig, y_t.shape)
+    except RuntimeError as exc:
+        raise ValueError("sigma is not broadcastable to the H3 state") from exc
+    if not torch.isfinite(sig).all() or bool((sig < 0).any()) or bool((sig > 1).any()):
+        raise ValueError("sigma must be finite and in [0, 1]")
+    return y_t + sig * x0_minus_eps
+
+
+def transition_layout_state(
+    y_t: torch.Tensor,
+    clean_x0: torch.Tensor,
+    sigma: torch.Tensor | float,
+    old_splice: LotSplice,
+    new_splice: LotSplice,
+) -> torch.Tensor:
+    """Change LoT layout coordinates while preserving the estimated noise.
+
+    This converts only the clean component of the Euler state because LoT's
+    fitted extent scales apply to clean latents, not to the sampled noise.
+    ``clean_x0`` is expressed in pretrained H3 latent coordinates.
+    """
+    if y_t.shape != clean_x0.shape:
+        raise ValueError("H3 state and clean estimate must have the same shape")
+    if old_splice.layout == new_splice.layout:
+        return y_t
+    sig = torch.as_tensor(sigma, device=y_t.device, dtype=y_t.dtype)
+    if sig.ndim == 1 and sig.shape[0] == y_t.shape[0]:
+        sig = sig.reshape(y_t.shape[0], *([1] * (y_t.ndim - 1)))
+    try:
+        sig = torch.broadcast_to(sig, y_t.shape)
+    except RuntimeError as exc:
+        raise ValueError("sigma is not broadcastable to the H3 state") from exc
+    if not torch.isfinite(sig).all() or bool((sig < 0).any()) or bool((sig > 1).any()):
+        raise ValueError("sigma must be finite and in [0, 1]")
+    old_clean = old_splice.to_y(clean_x0).to(device=y_t.device, dtype=y_t.dtype)
+    new_clean = new_splice.to_y(clean_x0).to(device=y_t.device, dtype=y_t.dtype)
+    return y_t + (1.0 - sig) * (new_clean - old_clean)
 
 
 class LotSplice:
@@ -104,3 +153,106 @@ class LotSplice:
         velocity = self.adapter.velocity_from_states(
             states, tokens, sigma, self.layout, x0_minus_eps=True)
         return velocity.reshape(-1, velocity.shape[-1])
+
+
+class BudgetedLayoutController:
+    """Select a new LoT layout after an Euler update, using its clean estimate.
+
+    The host sampler calls ``after_euler_step`` at a step boundary and installs
+    the returned splice before the next DiT forward. A zero refresh interval
+    selects once after warm-up and then freezes the layout.
+    """
+
+    def __init__(
+        self,
+        splice: LotSplice,
+        budget_per_frame: int,
+        *,
+        policy: str = "entropy",
+        calibration=None,
+        warmup_steps: int = 5,
+        warmup_sigma: float | None = None,
+        refresh_interval: int = 0,
+        bins: int = 16,
+        seed: int = 0,
+        selection_latent: torch.Tensor | None = None,
+        shuffle_roots: bool = False,
+    ) -> None:
+        if warmup_steps < 0 or refresh_interval < 0:
+            raise ValueError("warmup and refresh steps must be non-negative")
+        if warmup_sigma is not None and (not math.isfinite(warmup_sigma) or not 0 <= warmup_sigma <= 1):
+            raise ValueError("warmup_sigma must be finite and in [0, 1]")
+        if not isinstance(budget_per_frame, int):
+            raise TypeError("budget_per_frame must be an integer")
+        self.splice = splice
+        self.budget_per_frame = int(budget_per_frame)
+        self.policy = policy
+        self.calibration = calibration
+        self.warmup_steps = int(warmup_steps)
+        self.warmup_sigma = warmup_sigma
+        self.refresh_interval = int(refresh_interval)
+        self.bins = int(bins)
+        self.seed = int(seed)
+        self.selection_latent = None if selection_latent is None else selection_latent.detach().cpu()
+        self.shuffle_roots = bool(shuffle_roots)
+        self.last_selection_step: int | None = None
+        self.last_selection = None
+
+    @torch.no_grad()
+    def after_euler_step(
+        self,
+        state_before: torch.Tensor,
+        output: torch.Tensor,
+        sigma_before: torch.Tensor | float,
+        state_after: torch.Tensor,
+        sigma_after: torch.Tensor | float,
+        completed_steps: int,
+    ):
+        """Return `(state, active_splice, selection)` for the next Euler step."""
+        if completed_steps < 0:
+            raise ValueError("completed_steps must be non-negative")
+        if state_before.shape != state_after.shape:
+            raise ValueError("Euler states before and after must have matching shapes")
+        crossed_sigma = self.warmup_sigma is not None and float(torch.as_tensor(sigma_after)) <= self.warmup_sigma
+        warmup_complete = crossed_sigma if self.warmup_sigma is not None else completed_steps >= self.warmup_steps
+        due = warmup_complete and (
+            self.last_selection_step is None
+            or self.refresh_interval > 0
+            and completed_steps - self.last_selection_step >= self.refresh_interval
+        )
+        if not due:
+            return state_after, self.splice, None
+
+        from budget_layout import choose_budget_layout, permute_root_layout
+
+        clean_y = h3_clean_estimate(state_before, output, sigma_before)
+        clean_x = self.splice.to_x(clean_y)
+        selection_x = clean_x if self.selection_latent is None else self.selection_latent
+        if selection_x.shape != clean_x.shape:
+            raise ValueError("selection latent must match the sampled video latent shape")
+        token_lattice = patchify(selection_x)[0]
+        selection = choose_budget_layout(
+            token_lattice,
+            self.budget_per_frame,
+            policy=self.policy,
+            calibration=self.calibration,
+            bins=self.bins,
+            seed=self.seed + completed_steps,
+        )
+        if self.shuffle_roots:
+            selection = replace(
+                selection,
+                layout=permute_root_layout(selection.layout, seed=self.seed + completed_steps),
+                policy=selection.policy + "_root_shuffled",
+            )
+        self.last_selection_step = completed_steps
+        self.last_selection = selection
+        if selection.layout == self.splice.layout:
+            return state_after, self.splice, selection
+
+        next_splice = LotSplice(self.splice.adapter, selection.layout, y_space=True)
+        changed = transition_layout_state(
+            state_after, clean_x, sigma_after, self.splice, next_splice
+        )
+        self.splice = next_splice
+        return changed, next_splice, selection

@@ -1,0 +1,11 @@
+[general]
+resolution = [640, 384]
+batch_size = 1
+enable_bucket = true
+bucket_no_upscale = true
+caption_extension = ".txt"
+num_repeats = 1
+
+[[datasets]]
+image_directory = "/data/lot_openvid_777/clips"
+cache_directory = "/data/lot_openvid_777/cache"

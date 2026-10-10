@@ -36,9 +36,14 @@ sys.path.insert(0, "/media/2TB/Fizgig/src")
 
 from gpu_guard import refuse_if_busy  # noqa: E402
 from h3 import clip_layout, make_h3_adapter  # noqa: E402
-from layout import TokenRect, layout_from_rects  # noqa: E402
 from h3_splice import LotSplice  # noqa: E402
-from procrustes_h3 import CHECKPOINT, fit_bank, load_pairs, pretrained_maps  # noqa: E402
+from layout import TokenRect, layout_from_rects  # noqa: E402
+from procrustes_h3 import (  # noqa: E402
+    CHECKPOINT,
+    fit_bank,
+    load_pairs,
+    pretrained_maps,
+)
 
 TE_CACHE = Path("/media/2TB/lora-data/fizgig_minimax_h3/cache_iso3d")
 CAPTIONS = Path("/media/2TB/lora-data/fizgig_minimax_h3/isometric_3d_stills")
@@ -109,6 +114,10 @@ def main() -> None:
                              "lot_trained variants and renders the trainer's held-out prompts")
     parser.add_argument("--rank", type=int, default=16, help="LoRA rank train_h3 used")
     args = parser.parse_args()
+    if args.trained is not None:
+        from run_artifacts import resolve_checkpoint
+
+        args.trained = resolve_checkpoint(args.trained)
 
     refuse_if_busy("render_h3.py")
     pairs = load_pairs(args.pairs)
@@ -196,8 +205,8 @@ def main() -> None:
     del model, splices, network
     gc.collect()
 
-    from safetensors import safe_open
     from fizgig.minimax.vae import MiniMaxH3VideoVAEDecoder
+    from safetensors import safe_open
 
     decoder = MiniMaxH3VideoVAEDecoder()
     with safe_open(str(VAE), framework="pt", device="cpu") as handle:

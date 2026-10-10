@@ -7,4 +7,8 @@ __pycache__/
 # the *.safetensors rule above; the logs are large, per-run and reproducible from the script.
 scripts/scd/runs/
 scripts/lot/runs/
+
+# Curated H3 training media and derived latent/text caches (manifest and notes stay tracked).
+data/lot_openvid_777/clips/
+data/lot_openvid_777/cache/
 scripts/scd/*.log
